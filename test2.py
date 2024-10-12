@@ -80,77 +80,85 @@ def calculate_location_score(amenities, alerts):
 
     return score
 
-# Gather user inputs
-user_lat = float(input("Enter your current latitude: "))  # Current location (disaster zone)
-user_lon = float(input("Enter your current longitude: "))
-financial_situation = float(input("Enter your financial situation (e.g., 50000): "))
-has_kids = input("Do you have kids? (yes/no): ").strip().lower() == 'yes'
-job_flexibility = input("Is your job flexible? (yes/no): ").strip().lower() == 'yes'
+def main(user_lat, user_lon, financial_situation, has_kids, job_flexibility):
+    # Define minimum and maximum relocation distance
+    min_safe_distance = 5  # km
+    max_safe_distance = 20  # km
 
-# Define minimum and maximum relocation distance
-min_safe_distance = 5  # km
-max_safe_distance = 20  # km
+    # Find potential safe relocation points
+    safe_locations = find_safe_locations(user_lat, user_lon, min_safe_distance, max_safe_distance)
 
-# Find potential safe relocation points
-safe_locations = find_safe_locations(user_lat, user_lon, min_safe_distance, max_safe_distance)
+    # Store each location with its score in a list
+    location_scores = []
 
-# Store each location with its score in a list
-location_scores = []
+    print("Evaluating nearby safe locations...\n")
 
-print("Evaluating nearby safe locations...\n")
-
-for location in safe_locations:
-    lat, lon = location
-    
-    # Fetch amenities around the new location with an increased radius
-    amenities = fetch_nearby_amenities(lat, lon, radius=15000)  # Increased radius
-    
-    # Fetch NWS alerts for the location
-    nws_alerts = fetch_nws_alerts(lat, lon)
-
-    # Calculate location score based on amenities and alerts
-    location_score = calculate_location_score(amenities, nws_alerts)
-    
-    # Store the location and its score in the list
-    location_scores.append({
-        "location": (lat, lon),
-        "score": location_score,
-        "amenities": amenities,
-        "alerts": nws_alerts  # Store alerts for reference
-    })
-
-# Sort locations by score in descending order (highest score first)
-location_scores = sorted(location_scores, key=lambda x: x["score"], reverse=True)
-
-from geopy.geocoders import Nominatim
-
-geolocator = Nominatim(user_agent="my_unique_application_name")
-
-try:
-    location = geolocator.reverse((user_lat, user_lon))
-    print("User's adress:",location.address)
-except Exception as e:
-    print(f"Error fetching location: {e}")
-
-# Output the top locations with their scores
-print("Top Recommended Locations:\n")
-
-try:
-    for location_data in location_scores:
-    
-        loc = location_data["location"]
-        score = location_data["score"]
-        amenities = location_data["amenities"]
-        alerts = location_data["alerts"]
-    
-        location = geolocator.reverse((loc[0], loc[1]))
-        print("Location adress:",location.address)
-        print(f"Location ({loc[0]}, {loc[1]}) - Score: {score}")
-        print(f"  Hospitals: {len(amenities['hospital'])}")
-        print(f"  Supermarkets: {len(amenities['supermarket'])}")
-        print(f"  Parks: {len(amenities['park'])}")
-        print(f"  Active Alerts: {len(alerts)}\n")  # Display the number of active alerts
+    for location in safe_locations:
+        lat, lon = location
         
-except Exception as e:
-    print(f"Error fetching location: {e}")
+        # Fetch amenities around the new location with an increased radius
+        amenities = fetch_nearby_amenities(lat, lon, radius=15000)  # Increased radius
+        
+        # Fetch NWS alerts for the location
+        nws_alerts = fetch_nws_alerts(lat, lon)
 
+        # Calculate location score based on amenities and alerts
+        location_score = calculate_location_score(amenities, nws_alerts)
+        
+        # Store the location and its score in the list
+        location_scores.append({
+            "location": (lat, lon),
+            "score": location_score,
+            "amenities": amenities,
+            "alerts": nws_alerts  # Store alerts for reference
+        })
+
+    # Sort locations by score in descending order (highest score first)
+    location_scores = sorted(location_scores, key=lambda x: x["score"], reverse=True)
+
+    from geopy.geocoders import Nominatim
+
+    geolocator = Nominatim(user_agent="my_unique_application_name")
+
+    try:
+        location = geolocator.reverse((user_lat, user_lon))
+        print("User's adress:",location.address)
+    except Exception as e:
+        print(f"Error fetching location: {e}")
+
+    # Output the top locations with their scores
+    print("Top Recommended Locations:\n")
+
+    try:
+        for location_data in location_scores:
+        
+            loc = location_data["location"]
+            score = location_data["score"]
+            amenities = location_data["amenities"]
+            alerts = location_data["alerts"]
+        
+            location = geolocator.reverse((loc[0], loc[1]))
+            print("Location adress:",location.address)
+            print(f"Location ({loc[0]}, {loc[1]}) - Score: {score}")
+            print(f"  Hospitals: {len(amenities['hospital'])}")
+            print(f"  Supermarkets: {len(amenities['supermarket'])}")
+            print(f"  Parks: {len(amenities['park'])}")
+            print(f"  Active Alerts: {len(alerts)}\n")  # Display the number of active alerts
+            
+    except Exception as e:
+        print(f"Error fetching location: {e}")
+
+
+import json
+
+with open('example_inputs.json') as f:
+    data = json.load(f)
+
+for example in data['examples']:
+    user_lat = example['current_latitude']
+    user_lon = example['current_longitude']
+    financial_situation = example['financial_situation']
+    has_kids = example['has_kids']
+    job_flexibility = example['job_flexibility']
+
+    main(user_lat, user_lon, financial_situation, has_kids, job_flexibility)
