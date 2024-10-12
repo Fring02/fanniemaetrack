@@ -1,5 +1,5 @@
 <!-- src/app/housing-questionnaire/housing-questionnaire.component.html -->
-<div class="questionnaire-container">
+<div class="questionnaire-container" *ngIf="!formSubmitted">
     <h2>Housing Preferences Questionnaire</h2>
     <form [formGroup]="questionnaireForm" (ngSubmit)="onSubmit()">
       <div>

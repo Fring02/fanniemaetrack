@@ -1,6 +1,6 @@
 // src/app/housing-questionnaire/housing-questionnaire.component.ts
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 @Component({
@@ -25,9 +25,11 @@ export class HousingQuestionnaireComponent {
     });
   }
 
-  // Handle form submission
+  @Output() formSubmittedEvent = new EventEmitter<void>();
+  formSubmitted = false;
+
   onSubmit() {
-    this.formResult = this.questionnaireForm.value;
-    console.log('Form submitted:', this.formResult);
+    this.formSubmitted = true;
+    this.formSubmittedEvent.emit();
   }
 }

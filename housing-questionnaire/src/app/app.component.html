@@ -179,7 +179,12 @@
 
 <main class="main">
   <div class="content">
-    <app-housing-questionnaire></app-housing-questionnaire>
+    <div *ngIf="!mapOverlayVisible" >
+      <app-housing-questionnaire (formSubmittedEvent)="showMapOverlay()"></app-housing-questionnaire>
+    </div>
+    <div *ngIf="mapOverlayVisible" >
+      <app-map-overlay></app-map-overlay>
+    </div>
   </div>
 </main>
 <router-outlet />
