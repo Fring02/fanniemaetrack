@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Choropleth Map for Risk Zones</title>
+  <title>Choropleth Map with Housing Listings</title>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCGJpwrHFi0zoh-ah89w-xIRtK8jGn0zDo&callback=initMap" async defer></script>
   <style>
     #map {
@@ -13,71 +13,137 @@
   </style>
 </head>
 <body>
-  <h1>Choropleth Map for Risk Zones</h1>
+  <h1>Choropleth Map with Housing Listings</h1>
   <div id="map"></div>
 
   <script>
     let map;
-
+    let housingMarkers = [];
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
         center: { lat: 38.8462, lng: -77.3064 }, // GMU coordinates
-        zoom: 6,
+        zoom: 15,
         mapTypeId: 'terrain',
       });
 
-      // Load and display GeoJSON data for counties
-      map.data.loadGeoJson('http://localhost:8080/counties.geojson');
+      // Load GeoJSON and housing data
+      Promise.all([fetchHousingListings(), loadGeoJsonData()])
+        .then(([housingData]) => {
+          displayHousingListings(housingData);
+        })
+        .catch((error) => console.error("Error loading data:", error));
+    }
 
-      // Apply styling to counties based on risk score
-      map.data.setStyle((feature) => {
-        const riskScore = Math.random() * 10; // Example: Replace with real risk score if available
-        return {
-          fillColor: getRiskColor(riskScore),
-          fillOpacity: 0.6,
-          strokeColor: '#000',
-          strokeWeight: 1,
-        };
-      });
+    function loadGeoJsonData() {
+      return new Promise((resolve, reject) => {
+        map.data.loadGeoJson('http://localhost:8080/counties.geojson', {}, () => {
+          map.data.setStyle((feature) => {
+            const riskScore = Math.random() * 10; // Replace with real risk data
+            return {
+              fillColor: getRiskColor(riskScore),
+              fillOpacity: 0.6,
+              strokeColor: '#000',
+              strokeWeight: 1,
+            };
+          });
 
-      // Add click event to show details for each county
-      map.data.addListener('click', (event) => {
-        const content = `
-          <div>
-            <h3>County: ${event.feature.getProperty('NAME')}</h3>
-            <p>State: ${event.feature.getProperty('STATE')}</p>
-            <p>Risk Score: ${Math.random() * 10}</p> <!-- Replace with actual score -->
-          </div>
-        `;
-        const infoWindow = new google.maps.InfoWindow({
-          content: content,
-          position: event.latLng,
+          map.data.addListener('click', (event) => {
+            const content = `
+              <div>
+                <h3>County: ${event.feature.getProperty('NAME')}</h3>
+                <p>State: ${event.feature.getProperty('STATE')}</p>
+                <p>Risk Score: ${Math.random() * 10}</p> <!-- Replace with actual score -->
+              </div>
+            `;
+            const infoWindow = new google.maps.InfoWindow({
+              content: content,
+              position: event.latLng,
+            });
+            infoWindow.open(map);
+          });
+
+          resolve(); // Resolve the promise when GeoJSON loading completes
         });
-        infoWindow.open(map);
       });
     }
 
-    // Function to determine fill color based on risk score
     function getRiskColor(riskScore) {
       return riskScore > 8
-        ? '#FF0000' // High risk (red)
+        ? '#FF0000'
         : riskScore > 5
-        ? '#FFA500' // Moderate risk (orange)
+        ? '#FFA500'
         : riskScore > 2
-        ? '#FFFF00' // Low risk (yellow)
-        : '#00FF00'; // Minimal risk (green)
+        ? '#FFFF00'
+        : '#00FF00';
     }
 
-    // Dynamically load the Google Maps API script
-    function loadGoogleMaps() {
-      const script = document.createElement('script');
-      script.src =
-        'https://maps.googleapis.com/maps/api/js?key=AIzaSyCGJpwrHFi0zoh-ah89w-xIRtK8jGn0zDo&callback=initMap';
-      script.defer = true;
-      document.head.appendChild(script);
+    async function fetchHousingListings() {
+      const url = 'https://us-real-estate.p.rapidapi.com/v3/for-sale?state_code=FL&city=Tampa&sort=newest&offset=0&limit=10';
+      const options = {
+        method: 'GET',
+        headers: {
+          'x-rapidapi-key': 'ed8586b3cfmsh3061e0b328c10ffp14a91bjsn561a5393a476',
+          'x-rapidapi-host': 'us-real-estate.p.rapidapi.com'
+        }
+      };
+      try {
+        const response = await fetch(url, options);
+        if (!response.ok) {
+          console.error(`HTTP error! status: ${response.status}`);
+          return {};
+        }
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error("Error fetching housing listings:", error);
+        return {};  // Return an empty object on error
+      }
     }
 
-    loadGoogleMaps();
+    // Display housing listings on the map
+    function displayHousingListings(response) {
+      if (!response.data || !response.data.home_search) {
+        console.error("Invalid housing data format:", response);
+        return;
+      }
+
+      const listings = response.data.home_search.results;
+
+      listings.forEach((listing) => {
+        const coordinates = listing.location.address.coordinate;
+
+        const marker = new google.maps.Marker({
+          position: { lat: coordinates.lat, lng: coordinates.lon },
+          map: map,
+          title: `${listing.location.address.line}, ${listing.location.address.city}, ${listing.location.address.state_code}`,
+        });
+
+        const imageSrc = listing.primary_photo ? listing.primary_photo.href : 'https://via.placeholder.com/150';
+
+        const infoWindowContent = `
+          <div style="max-width: 300px;">
+            <h3>${listing.location.address.line}</h3>
+            <p>${listing.location.address.city}, ${listing.location.address.state_code} ${listing.location.address.postal_code}</p>
+            <p><strong>Price:</strong> $${listing.list_price.toLocaleString()}</p>
+            <p><strong>Beds:</strong> ${listing.description.beds}, <strong>Baths:</strong> ${listing.description.baths_consolidated}</p>
+            <p><strong>Sqft:</strong> ${(listing.description.sqft !== null) ? listing.description.sqft.toLocaleString() : "Unavailable"}</p>
+            <img src="${imageSrc}" alt="Property Image" style="width:100%; height:auto;"/>
+            <a href="https://www.realtor.com/realestateandhomes-detail/${listing.permalink}" target="_blank">View Details</a>
+          </div>
+        `;
+
+        const infoWindow = new google.maps.InfoWindow({
+          content: infoWindowContent,
+        });
+
+        marker.addListener("click", () => {
+          infoWindow.open(map, marker);
+        });
+
+        housingMarkers.push(marker);
+      });
+    }
+
   </script>
 </body>
 </html>
