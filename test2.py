@@ -130,7 +130,7 @@ def main(user_lat, user_lon, financial_situation, has_kids, job_flexibility):
     print("Top Recommended Locations:\n")
 
     try:
-        for location_data in location_scores:
+        for location_data in location_scores[:10]:
         
             loc = location_data["location"]
             score = location_data["score"]
