@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Housing and Disaster Map</title>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCGJpwrHFi0zoh-ah89w-xIRtK8jGn0zDo&callback=initMap&libraries=visualization" async defer></script>
+  <style>
+    #map {
+      height: 90vh;
+      width: 100%;
+    }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-radius: 5px;
+      z-index: 1001;
+    }
+    #controls button {
+      margin: 5px;
+      padding: 10px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Interactive Housing and Disaster Map</h1>
+  <div id="map"></div>
+
+  <script>
+    let map;
+    let housingMarkers = [];
+    let disasterHeatmap;
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 38.8462, lng: -77.3064 }, // GMU coordinates
+        zoom: 10,
+      });
+
+      Promise.all([fetchHousingListings(), fetchDisasterHotspots()])
+        .then(([housingData, disasterData]) => {
+          displayHousingListings(housingData);
+          displayDisasterHotspots(disasterData);
+        })
+        .catch((error) => console.error("Error loading data:", error));
+    }
+
+    // Fetch housing listings from an API (for example, RapidAPI)
+    async function fetchHousingListings() {
+      const url = 'https://us-real-estate.p.rapidapi.com/v3/for-sale?state_code=FL&city=Tampa&sort=newest&offset=0&limit=10';
+      const options = {
+        method: 'GET',
+        headers: {
+          'x-rapidapi-key': 'ed8586b3cfmsh3061e0b328c10ffp14a91bjsn561a5393a476',
+          'x-rapidapi-host': 'us-real-estate.p.rapidapi.com'
+        }
+      };
+      try {
+        const response = await fetch(url, options);
+        if (!response.ok) {
+          console.error(`HTTP error! status: ${response.status}`);
+          return {};
+        }
+        const data = await response.json();
+        console.log(data);  // Log the full response for debugging
+        return data;
+      } catch (error) {
+        console.error("Error fetching housing listings:", error);
+        return {};  // Return an empty object on error
+      }
+    }
+
+    // Fetch disaster data from the NWS API (or other disaster sources)
+async function fetchDisasterHotspots() {
+    const url = 'https://api.weather.gov/alerts/active?area=FL';  // Change 'FL' to any state or area
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        console.log(data);  // Log disaster data for debugging
+
+        return data.features
+            .map((feature) => {
+                const { geometry, properties } = feature;
+
+                // Handle different geometry types
+                if (geometry && geometry.type === "Polygon") {
+                    const [firstCoordinate] = geometry.coordinates[0]; // Extract first point from the polygon
+                    return {
+                        lat: firstCoordinate[1], // Latitude
+                        lng: firstCoordinate[0], // Longitude
+                        type: properties.event,
+                        description: properties.description,
+                        severity: properties.severity,
+                        headline: properties.headline,
+                    };
+                } else if (geometry && geometry.type === "Point") {
+                    return {
+                        lat: geometry.coordinates[1], // Latitude
+                        lng: geometry.coordinates[0], // Longitude
+                        type: properties.event,
+                        description: properties.description,
+                        severity: properties.severity,
+                        headline: properties.headline,
+                    };
+                } else {
+                    return null;  // Ignore entries with unsupported or missing geometry
+                }
+            })
+            .filter((entry) => entry !== null);  // Remove null entries
+    } catch (error) {
+        console.error("Error fetching disaster hotspots:", error);
+        return [];
+    }
+}
+
+    // Display housing listings on the map
+    function displayHousingListings(response) {
+      if (!response.data || !response.data.home_search) {
+        console.error("Invalid housing data format:", response);
+        return;
+      }
+
+      const listings = response.data.home_search.results;
+
+      listings.forEach((listing) => {
+        const coordinates = listing.location.address.coordinate;
+
+        const marker = new google.maps.Marker({
+          position: { lat: coordinates.lat, lng: coordinates.lon },
+          map: map,
+          title: `${listing.location.address.line}, ${listing.location.address.city}, ${listing.location.address.state_code}`,
+        });
+
+        const imageSrc = listing.primary_photo ? listing.primary_photo.href : 'https://via.placeholder.com/150';
+
+        const infoWindowContent = `
+          <div style="max-width: 300px;">
+            <h3>${listing.location.address.line}</h3>
+            <p>${listing.location.address.city}, ${listing.location.address.state_code} ${listing.location.address.postal_code}</p>
+            <p><strong>Price:</strong> $${listing.list_price.toLocaleString()}</p>
+            <p><strong>Beds:</strong> ${listing.description.beds}, <strong>Baths:</strong> ${listing.description.baths_consolidated}</p>
+            <p><strong>Sqft:</strong> ${(listing.description.sqft !== null) ? listing.description.sqft.toLocaleString() : "Unavailable"}</p>
+            <img src="${imageSrc}" alt="Property Image" style="width:100%; height:auto;"/>
+            <a href="https://www.realtor.com/realestateandhomes-detail/${listing.permalink}" target="_blank">View Details</a>
+          </div>
+        `;
+
+        const infoWindow = new google.maps.InfoWindow({
+          content: infoWindowContent,
+        });
+
+        marker.addListener("click", () => {
+          infoWindow.open(map, marker);
+        });
+
+        housingMarkers.push(marker);
+      });
+    }
+
+    function displayDisasterHotspots(disasterData) {
+        if (disasterData.length === 0) {
+            console.warn("No disaster hotspots to display.");
+            return;
+        }
+
+        const heatmapPoints = disasterData.map(disaster => 
+            new google.maps.LatLng(disaster.lat, disaster.lng)
+        );
+
+        const disasterHeatmap = new google.maps.visualization.HeatmapLayer({
+            data: heatmapPoints,
+            map: map,
+            radius: 20,
+            opacity: 0.6,
+            gradient: [
+            'rgba(0, 255, 255, 0)',
+            'rgba(0, 255, 255, 1)',
+            'rgba(0, 191, 255, 1)',
+            'rgba(0, 127, 255, 1)',
+            'rgba(0, 63, 255, 1)',
+            'rgba(0, 0, 255, 1)',
+            'rgba(0, 0, 223, 1)',
+            'rgba(0, 0, 191, 1)',
+            'rgba(0, 0, 159, 1)',
+            'rgba(0, 0, 127, 1)',
+            'rgba(63, 0, 91, 1)',
+            'rgba(127, 0, 63, 1)',
+            'rgba(191, 0, 31, 1)',
+            'rgba(255, 0, 0, 1)'
+            ]
+        });
+    }
+
+    google.maps.event.addListener(map, 'zoom_changed', () => {
+        const zoom = map.getZoom();
+        disasterHeatmap.set('radius', zoom * 2);  // Adjust radius based on zoom
+    });
+
+
+  </script>
+</body>
+</html>
