@@ -115,7 +115,7 @@ async def main(user_lat, user_lon, financial_situation, has_kids, job_flexibilit
     # Output the top locations with their scores
     print("Top Recommended Locations:\n")
     try:
-        for location_data in location_scores[:10]:
+        for location_data in location_scores[:3]:
             loc = location_data["location"]
             score = location_data["score"]
             amenities = location_data["amenities"]
