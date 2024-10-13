@@ -50,7 +50,7 @@ function displayHousingListings(map, housingMarkers, response) {
 
         const imageSrc = listing.primary_photo ? listing.primary_photo.href : 'https://via.placeholder.com/150';
 
-        const infoWindowContent = `
+        let infoWindowContent = `
         <div style="max-width: 300px;">
         <h3>${listing.location.address.line}</h3>
         <p>${listing.location.address.city}, ${listing.location.address.state_code} ${listing.location.address.postal_code}</p>
@@ -59,6 +59,7 @@ function displayHousingListings(map, housingMarkers, response) {
         <p><strong>Sqft:</strong> ${(listing.description.sqft !== null) ? listing.description.sqft.toLocaleString() : "Unavailable"}</p>
         <img src="${imageSrc}" alt="Property Image" style="width:100%; height:auto;"/>
         <a href="https://www.realtor.com/realestateandhomes-detail/${listing.permalink}" target="_blank">View Details</a>
+        <a href="https://singlefamily.fanniemae.com/originating-underwriting/mortgage-products/homeready-mortgage" target="_blank">View Recommended Mortgaging Options</a>
         </div>
     `;
 
