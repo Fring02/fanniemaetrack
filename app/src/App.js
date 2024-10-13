@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState } from 'react';
 import Map from './components/Map';
-import Sidebar from './components/Sidebar';
+//import Sidebar from './components/Sidebar';
 
 export default function App() {
 const states = [
@@ -9,7 +9,7 @@ const states = [
   { name: 'NY', cities: ['New York', 'Buffalo', 'Rochester'] },
   { name: 'VA', cities: ['Fairfax', 'Arlington', 'Richmond'] },
 ];
-  const [selectedCities, setSelectedCities] = useState([]);
+  const [_, setSelectedCities] = useState([]);
 
   const handleApply = () => {
     const selected = Array.from(

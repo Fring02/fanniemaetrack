@@ -1,5 +1,5 @@
 async function fetchHousingListings(states) {
-    const fetchPromises = states.map((state) => {
+    let fetchPromises = states.map((state) => {
         const code = state.name;
         const cities = state.cities.join(',');  // Join cities into a comma-separated string
         
