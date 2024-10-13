@@ -1,6 +1,6 @@
 import React from 'react';
-import { useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { json, useLocation } from 'react-router-dom';
 import { displayHousingListings, fetchHousingListings } from '../housing';
 import displayLocations from '../locations';
 function getRiskColor(riskScore) {
@@ -18,6 +18,28 @@ function getRiskColor(riskScore) {
 function Map() {
   const mapRef = useRef(null); // Ref to the map div
   const location = useLocation();
+  function getCounties(counties){
+    const stateCityMap = {};
+     counties.forEach(({ state, county_name }) => {
+        if (!stateCityMap[state]) {
+          stateCityMap[state] = new Set(); // Use Set to avoid duplicate cities
+        }
+        stateCityMap[state].add(county_name);
+      });
+      const states = Object.entries(stateCityMap).map(([state, citiesSet]) => ({
+        name: state,
+        cities: Array.from(citiesSet),
+      }));
+      return states;
+  }
+  const [filter, setFilter] = useState(() => {
+    let s = getCounties(location.state.state.counties);
+    return {
+      states: s,
+      filter: location.state.filter,
+      global: s
+    };
+  });
   useEffect(() => {
     // Dynamically load the Google Maps API script
     const loadGoogleMapsScript = () => {
@@ -31,7 +53,9 @@ function Map() {
         document.body.appendChild(script);
       } else {
         // If script is already loaded, call the init function directly
-        if (window.google) initMap();
+        if (window.google) {
+          initMap();
+        }
       }
     };
 
@@ -48,7 +72,7 @@ function Map() {
         document.body.removeChild(script);
       }
     };
-  }, []);
+  }, [filter]);
 
 function loadGeoJsonData(map){
   return new Promise((resolve, reject) => {
@@ -91,6 +115,47 @@ function loadGeoJsonData(map){
   });
 }
 
+  function onCheckCounty(e){
+    e.preventDefault();
+    const checkbox = e.target;
+    const value = checkbox.value.split(',');
+    let name = value[1], city = value[0];
+    if(checkbox.checked){
+      setFilter((prevState) => {
+        // Create a new array by mapping through the states and filtering the cities
+        const updatedStates = prevState.states.map((state) => {
+          if (state.name === name) {
+            state.cities.push(city);
+            return {
+              ...state,
+              cities: state.cities // Remove the specific city
+            };
+          }
+          return state; // Return the state as-is if it doesn't match
+        }).filter(state => state.cities.length > 0); // Optional: Remove states with no cities left
+    
+        return { ...prevState, states: updatedStates };
+      });
+      console.log(filter);
+    } else {
+      setFilter((prevState) => {
+        // Create a new array by mapping through the states and filtering the cities
+        const updatedStates = prevState.states.map((state) => {
+          if (state.name === name) {
+            return {
+              ...state,
+              cities: state.cities.filter((c) => c !== city) // Remove the specific city
+            };
+          }
+          return state; // Return the state as-is if it doesn't match
+        }).filter(state => state.cities.length > 0); // Optional: Remove states with no cities left
+    
+        return { ...prevState, states: updatedStates };
+      });
+      console.log(filter);
+    }
+  }
+
   function initMap() {
     let housingMarkers = [];
     if (mapRef.current) {
@@ -99,25 +164,14 @@ function loadGeoJsonData(map){
         zoom: 15,
         mapTypeId: 'terrain',
       });
-     let state = location.state.state;
-     const stateCityMap = {};
-      state.counties.forEach(({ state, county_name }) => {
-        if (!stateCityMap[state]) {
-          stateCityMap[state] = new Set(); // Use Set to avoid duplicate cities
-        }
-        stateCityMap[state].add(county_name);
-      });
-      const states = Object.entries(stateCityMap).map(([state, citiesSet]) => ({
-        name: state,
-        cities: Array.from(citiesSet),
-      }));
-      displayLocations(states);
+     let states = filter.states;
+     console.log(states);
+      displayLocations(states, onCheckCounty, filter);
       // Load GeoJSON and housing data
-        Promise.all([fetchHousingListings(states), loadGeoJsonData(map)])
+        Promise.all([fetchHousingListings(states, filter.filter), loadGeoJsonData(map)])
         .then(([housingData]) => {
-            housingData.flat().forEach(data => {
-              alert(JSON.stringify(data));
-                displayHousingListings(map, housingMarkers, data);
+            housingData.flat().forEach(response => {
+                displayHousingListings(map, housingMarkers, response);
             });
         })
         .catch((error) => console.error("Error loading data:", error));

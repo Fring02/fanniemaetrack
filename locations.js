@@ -1,5 +1,4 @@
-function displayLocations(states){
-  alert(JSON.stringify(states))
+function displayLocations(states, onCheckCounty){
     const stateList = document.getElementById('listings');
     states.forEach(state => {
       // Create a state header item
@@ -16,14 +15,15 @@ function displayLocations(states){
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.classList.add('form-check-input', 'me-1');
-        checkbox.value = city;
+        checkbox.value = city + ',' + state.name;
         checkbox.dataset.state = state.name;
+        checkbox.onclick = onCheckCounty;
   
         cityItem.appendChild(checkbox);
         cityItem.appendChild(document.createTextNode(city));
         stateList.appendChild(cityItem);
       });
-    });``
+    });
 }
 
 export {displayLocations};

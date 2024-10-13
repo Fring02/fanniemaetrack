@@ -1,43 +1,52 @@
-async function fetchHousingListings(states) {
-    let fetchPromises = states.map((state) => {
-        const code = state.name;
-        const cities = state.cities.join(',');  // Join cities into a comma-separated string
-        
-        const url = `https://us-real-estate.p.rapidapi.com/v3/for-sale?state_code=${code}&city=${cities}&sort=newest&offset=0&limit=42`;
-        const options = {
-          method: 'GET',
-          headers: {
-            'x-rapidapi-key': 'f71b860b52mshddedffc0e51d3d1p1ab6bdjsncaead164d2c0',
-            'x-rapidapi-host': 'us-real-estate.p.rapidapi.com'
+async function fetchHousingListings(states, filter) {
+  const fetchPromises = states.flatMap((state) => {
+    const code = state.name;
+    return state.cities.map((city) => {
+      const url = `https://us-real-estate.p.rapidapi.com/v3/for-sale?state_code=${code}&city=${city}&beds_min=${filter.beds_min}&baths_min=${filter.baths_min}&property_type=${filter.property_type}&price_min=${filter.price_min}&price_max=${filter.price_max}&sort=newest&offset=0&limit=42`;
+    
+      const options = {
+        method: 'GET',
+        headers: {
+          'x-rapidapi-key': 'ed8586b3cfmsh3061e0b328c10ffp14a91bjsn561a5393a476',
+          'x-rapidapi-host': 'us-real-estate.p.rapidapi.com'
+        }
+      };
+
+      // Return a fetch promise for each city
+      return fetch(url, options)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
           }
-        };
-        // Return a fetch promise for each state
-        return fetch(url, options)
-          .then((response) => {
-            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-            return response.json();
-          })
-          .catch((error) => {
-            console.error(`Error fetching listings for ${code}:`, error);
-            return {};  // Return an empty object if the request fails
-          });
-     });
-    return Promise.all(fetchPromises);
+          return response.json();
+        })
+        .catch((error) => {
+          console.error(`Error fetching listings for ${city}, ${code}:`, error);
+          return null;  // Return null to indicate a failed request
+        });
+    });
+  });
+  try {
+    const results = await Promise.all(fetchPromises);
+    const validResults = results.filter((result) => result !== null);  // Filter out failed requests
+    return validResults;
+  } catch (error) {
+    console.error('Error fetching all listings:', error);
+    return [];
+  }
 }
+
 
 
 // Display housing listings on the map
 function displayHousingListings(map, housingMarkers, response) {
-        if (!response.data || !response.data.home_search) {
+        if (!response.data || !response.data.home_search.count) {
           console.error("Invalid housing data format:", response);
             return;
         }
-
         const listings = response.data.home_search.results;
-
         listings.forEach((listing) => {
         const coordinates = listing.location.address.coordinate;
-
         const marker = new window.google.maps.Marker({
             position: { lat: coordinates.lat, lng: coordinates.lon },
             map: map,

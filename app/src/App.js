@@ -4,23 +4,6 @@ import Map from './components/Map';
 //import Sidebar from './components/Sidebar';
 
 export default function App() {
-const states = [
-  { name: 'CA', cities: ['Los Angeles', 'San Francisco', 'San Diego'] },
-  { name: 'NY', cities: ['New York', 'Buffalo', 'Rochester'] },
-  { name: 'VA', cities: ['Fairfax', 'Arlington', 'Richmond'] },
-];
-  const [_, setSelectedCities] = useState([]);
-
-  const handleApply = () => {
-    const selected = Array.from(
-      document.querySelectorAll('#stateList input:checked')
-    ).map((input) => ({
-      state: input.dataset.state,
-      city: input.value,
-    }));
-    setSelectedCities(selected);
-  };
-
   return (
     <div>
       <div className="header">

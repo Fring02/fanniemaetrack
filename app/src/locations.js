@@ -1,6 +1,7 @@
-function displayLocations(states){
+function displayLocations(states, onCheckCounty, filter){
     const stateList = document.getElementById('listings');
-    states.forEach(state => {
+    stateList.innerHTML = '';
+    filter.global.forEach(state => {
       // Create a state header item
       const stateHeader = document.createElement('div');
       stateHeader.classList.add('list-group-item', 'fw-bold');
@@ -14,10 +15,14 @@ function displayLocations(states){
         
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
+        checkbox.checked = states.some(
+          (s) => s.name === state.name && s.cities.includes(city)
+        );
         checkbox.classList.add('form-check-input', 'me-1');
-        checkbox.value = city;
+        checkbox.value = city + ',' + state.name;
+        checkbox.id = city + ',' + state.name;
         checkbox.dataset.state = state.name;
-  
+        checkbox.onclick = onCheckCounty;
         cityItem.appendChild(checkbox);
         cityItem.appendChild(document.createTextNode(city));
         stateList.appendChild(cityItem);

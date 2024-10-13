@@ -1,219 +1,218 @@
 /* Global Styles */
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-  
-  body {
-    margin: 0;
-    font-family: 'Arial', sans-serif;
-    background-color: #f5f7fa; /* Light background for modern look */
-    color: #333; /* Dark text for readability */
-  }
-  
-  /* Header */
-  .header {
-    background-color: #4CAF50;
-    padding: 20px;
-    color: white;
-    text-align: center;
-    font-size: 28px;
-    font-weight: bold;
-    letter-spacing: 1px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-    position: fixed;
-    width: 100%;
-    top: 0;
-    z-index: 1000;
-  }
-  
-  /* Main Content Layout */
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  font-family: 'Arial', sans-serif;
+  background-color: #f5f7fa; /* Light background for modern look */
+  color: #333; /* Dark text for readability */
+}
+
+/* Header */
+.header {
+  background-color: #4CAF50;
+  padding: 20px;
+  color: white;
+  text-align: center;
+  font-size: 28px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 1000;
+}
+
+/* Main Content Layout */
+.results-container {
+  display: flex;
+  height: 90vh;
+  margin-top: 80px; /* Adding space for the fixed header */
+  overflow: hidden;
+}
+
+.map-section {
+  width: 60%;
+  height: 100%;
+  position: relative;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+/* Listings Section */
+.listings-section {
+  width: 40%;
+  height: 100%;
+  background-color: #f9f9f9;
+  overflow-y: auto;
+  padding: 20px;
+  border-left: 1px solid #ddd; /* Subtle divider between map and listings */
+}
+
+/* Individual Listing */
+.listing {
+  background-color: white;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.listing:hover {
+  transform: translateY(-5px); /* Subtle hover effect */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.listing h4 {
+  margin: 0 0 10px;
+  font-size: 22px;
+  color: #333;
+}
+
+.listing p {
+  margin: 0;
+  color: #555;
+  font-size: 16px;
+}
+
+/* Button in Listings */
+.listing-button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 15px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  margin-top: 15px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.listing-button:hover {
+  background-color: #45a049;
+}
+
+/* Footer */
+.footer {
+  background-color: #4CAF50;
+  text-align: center;
+  padding: 15px;
+  font-size: 16px;
+  color: white;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Questionnaire Styles */
+.questionnaire-container {
+  max-width: 1000px;
+  margin: 100px auto 0;
+  padding: 20px;
+  background-color: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.questionnaire-form .form-group {
+  margin-bottom: 20px;
+}
+
+.questionnaire-form label {
+  display: block;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.questionnaire-form input,
+.questionnaire-form select {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.questionnaire-form .features-grid {
+  display: flex;
+  justify-content: space-between;
+}
+
+.feature-box {
+  width: 30%;
+}
+
+.submit-btn {
+  background-color: #4CAF50;
+  color: white;
+  padding: 15px;
+  font-size: 18px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.submit-btn:hover {
+  background-color: #45a049;
+}
+
+/* Scrollbar for Listings */
+.listings-section::-webkit-scrollbar {
+  width: 6px;
+}
+
+.listings-section::-webkit-scrollbar-thumb {
+  background-color: #888;
+  border-radius: 10px;
+}
+
+.listings-section::-webkit-scrollbar-thumb:hover {
+  background-color: #555;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
   .results-container {
-    display: flex;
-    height: 90vh;
-    margin-top: 80px; /* Adding space for the fixed header */
-    overflow: hidden;
+    flex-direction: column;
+    height: auto;
   }
-  
-  .map-section {
-    width: 60%;
-    height: 100%;
-    position: relative;
-  }
-  
-  #map {
-    width: 100%;
-    height: 100%;
-  }
-  
-  /* Listings Section */
+
+  .map-section,
   .listings-section {
-    width: 40%;
-    height: 100%;
-    background-color: #f9f9f9;
-    overflow-y: auto;
-    padding: 20px;
-    border-left: 1px solid #ddd; /* Subtle divider between map and listings */
+    width: 100%;
+    height: 50vh;
   }
-  
-  /* Individual Listing */
-  .listing {
-    background-color: white;
-    padding: 20px;
-    margin-bottom: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  .listings-section {
+    border-left: none;
   }
-  
-  .listing:hover {
-    transform: translateY(-5px); /* Subtle hover effect */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 768px) {
+  .header {
+    font-size: 20px;
   }
-  
+
   .listing h4 {
-    margin: 0 0 10px;
-    font-size: 22px;
-    color: #333;
+    font-size: 18px;
   }
-  
+
   .listing p {
-    margin: 0;
-    color: #555;
-    font-size: 16px;
+    font-size: 14px;
   }
-  
-  /* Button in Listings */
+
   .listing-button {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 15px;
-    font-size: 16px;
-    border: none;
-    border-radius: 5px;
-    margin-top: 15px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
+    font-size: 14px;
   }
-  
-  .listing-button:hover {
-    background-color: #45a049;
-  }
-  
-  /* Footer */
-  .footer {
-    background-color: #4CAF50;
-    text-align: center;
-    padding: 15px;
-    font-size: 16px;
-    color: white;
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Questionnaire Styles */
-  .questionnaire-container {
-    max-width: 800px;
-    margin: 100px auto 0;
-    padding: 20px;
-    background-color: white;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-  }
-  
-  .questionnaire-form .form-group {
-    margin-bottom: 20px;
-  }
-  
-  .questionnaire-form label {
-    display: block;
-    font-size: 18px;
-    margin-bottom: 10px;
-  }
-  
-  .questionnaire-form input,
-  .questionnaire-form select {
-    width: 100%;
-    padding: 12px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-  }
-  
-  .questionnaire-form .features-grid {
-    display: flex;
-    justify-content: space-between;
-  }
-  
-  .feature-box {
-    width: 30%;
-  }
-  
-  .submit-btn {
-    background-color: #4CAF50;
-    color: white;
-    padding: 15px;
-    font-size: 18px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .submit-btn:hover {
-    background-color: #45a049;
-  }
-  
-  /* Scrollbar for Listings */
-  .listings-section::-webkit-scrollbar {
-    width: 6px;
-  }
-  
-  .listings-section::-webkit-scrollbar-thumb {
-    background-color: #888;
-    border-radius: 10px;
-  }
-  
-  .listings-section::-webkit-scrollbar-thumb:hover {
-    background-color: #555;
-  }
-  
-  /* Responsive Design */
-  @media (max-width: 1200px) {
-    .results-container {
-      flex-direction: column;
-      height: auto;
-    }
-  
-    .map-section,
-    .listings-section {
-      width: 100%;
-      height: 50vh;
-    }
-  
-    .listings-section {
-      border-left: none;
-    }
-  }
-  
-  @media (max-width: 768px) {
-    .header {
-      font-size: 20px;
-    }
-  
-    .listing h4 {
-      font-size: 18px;
-    }
-  
-    .listing p {
-      font-size: 14px;
-    }
-  
-    .listing-button {
-      font-size: 14px;
-    }
-  }
-  
+}

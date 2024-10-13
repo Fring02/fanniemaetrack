@@ -3,10 +3,18 @@ import aiohttp
 import geopy.distance
 from geopy.geocoders import Nominatim
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import us
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 class UserInput(BaseModel):
     current_latitude: float
@@ -148,7 +156,7 @@ async def main(user_input: UserInput):
     # print("Top Recommended Locations:\n")
     try:
         for location_data in location_scores:
-            if unique_counties >= 3:
+            if unique_counties >= 5:
                 break
 
             loc = location_data["location"]

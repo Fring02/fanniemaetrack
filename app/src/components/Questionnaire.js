@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { fetchRecommendedLocations, getCoordinates } from './utils';
 import { useHistory } from "react-router-dom";
-const Questionnaire = ({ onFormSubmit }) => {
+const Questionnaire = () => {
   const navigate = useHistory();
   const [formData, setFormData] = useState({
     previousAddress: '',
@@ -9,7 +9,8 @@ const Questionnaire = ({ onFormSubmit }) => {
     baths_min: 0,
     property_type: '',
     mortgageAssistance: 'no',
-    max_distance: 0
+    max_distance: 0,
+    price_range: ''
   });
 
   const handleChange = (e) => {
@@ -24,11 +25,19 @@ const Questionnaire = ({ onFormSubmit }) => {
     e.preventDefault();
     // Usage example
     getCoordinates(formData.previousAddress).then(coords => {
-      console.log('Coordinates:', coords);
       fetchRecommendedLocations(coords.current_latitude, coords.current_longitude, formData.max_distance)
       .then(data => {
-        alert(JSON.stringify(data));
-        navigate.push({pathname:'/search', state: {state: data}});
+        
+        const [min, max] = formData.price_range.split('-');
+        navigate.push({pathname:'/search', state: {state: data, filter:
+          {
+            beds_min: formData.beds_min,
+            baths_min: formData.beds_min,
+            property_type: formData.property_type,
+            max_distance: formData.max_distance,
+            price_min: min, price_max: max
+          }
+        }});
       });
     }).catch(error => console.error('Error:', error));
     //onFormSubmit(formData);
@@ -37,8 +46,8 @@ const Questionnaire = ({ onFormSubmit }) => {
   return (
     <div className="questionnaire-container">
       <h2>Housing Information Questionnaire</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
+      <form id="house-criteria-form" className="questionnaire-form" onSubmit={handleSubmit}>
+        <div className='form-group'>
           <label htmlFor="previousAddress">Previous Address:</label>
           <input
             id="previousAddress"
@@ -49,58 +58,61 @@ const Questionnaire = ({ onFormSubmit }) => {
             onChange={handleChange}
           />
         </div>
-        <div>
-          <label htmlFor="beds_min">Number of Beds:</label>
-          <select
-            id="beds_min"
-            name="beds_min"
-            value={formData.beds_min}
-            onChange={handleChange}
-          >
-            <option value="">Select...</option>
-            <option value="1">1 Bed</option>
-            <option value="2">2 Beds</option>
-            <option value="3">3 Beds</option>
-            <option value="4">4 Beds</option>
-            <option value="5">5+ Beds</option>
-          </select>
+        <div className="form-group">
+          <label htmlFor="price_range">What is your current budget?</label>
+          <input type='text' id="price_range" name="price_range" placeholder="Enter your price range" value={formData.price_range}
+            onChange={handleChange} required />
         </div>
-
-        <div>
-          <label htmlFor="baths_min">Number of Baths:</label>
-          <select
-            id="baths_min"
-            name="baths_min"
-            value={formData.baths_min}
-            onChange={handleChange}
-          >
-            <option value="">Select...</option>
-            <option value="1">1 Bath</option>
-            <option value="1.5">1.5 Baths</option>
-            <option value="2">2 Baths</option>
-            <option value="2.5">2.5 Baths</option>
-            <option value="3">3+ Baths</option>
-          </select>
+        <div className='form-group'>
+        <label>What features do you need in a new home?</label>
+        <div className="features-grid">
+            <div className="feature-box">
+              <label htmlFor="beds">Beds</label>
+                <select 
+              id="beds_min"
+              name="beds_min"
+              value={formData.beds_min}
+              onChange={handleChange} required>
+                <option value="">Select beds</option>
+                <option value="1">1 Bed</option>
+                <option value="2">2 Beds</option>
+                <option value="3">3 Beds</option>
+                <option value="4">4 Beds</option>
+                <option value="5">5 Beds or more</option>
+              </select>
+            </div>
+            <div className="feature-box">
+              <label htmlFor="baths">Baths</label>
+              <select 
+                id="baths_min"
+                name="baths_min"
+                value={formData.baths_min}
+                onChange={handleChange} required>
+                <option value="">Select baths</option>
+                <option value="1">1 Bath</option>
+                <option value="2">2 Baths</option>
+                <option value="3">3 Baths</option>
+                <option value="4">4 Baths or more</option>
+              </select>
+            </div>
+            <div className="feature-box">
+              <label htmlFor="home-type">Home Type</label>
+              <select 
+                id="property_type"
+                name="property_type"
+                value={formData.property_type}
+                onChange={handleChange} required>
+                <option value="">Select...</option>
+                <option value="multi_family">Multi family</option>
+                <option value="mobile">Mobile</option>
+                <option value="land">Land</option>
+                <option value="farm">Farm</option>
+                <option value="single_family">Single Family</option>
+              </select>
+            </div>
         </div>
-
-        <div>
-          <label htmlFor="property_type">Home Type:</label>
-          <select
-            id="property_type"
-            name="property_type"
-            value={formData.property_type}
-            onChange={handleChange}
-          >
-            <option value="">Select...</option>
-            <option value="multi_family">Multi family</option>
-            <option value="mobile">Mobile</option>
-            <option value="land">Land</option>
-            <option value="farm">Farm</option>
-            <option value="single_family">Single Family</option>
-          </select>
         </div>
-
-        <div>
+        <div className='form-group'>
           <label>Mortgage Assistance Needed:</label>
           <div>
             <label>
@@ -126,7 +138,7 @@ const Questionnaire = ({ onFormSubmit }) => {
           </div>
         </div>
 
-        <div>
+        <div className='form-group'>
           <label htmlFor="max_distance">Preferred Distance to Move (in miles):</label>
           <input
             id="max_distance"
@@ -138,7 +150,7 @@ const Questionnaire = ({ onFormSubmit }) => {
           />
         </div>
 
-        <button type="submit">Submit</button>
+        <button type="submit" className='btn btn-lg btn-success'>Submit</button>
       </form>
     </div>
   );
