@@ -2,6 +2,14 @@ import asyncio
 import aiohttp
 import geopy.distance
 from geopy.geocoders import Nominatim
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class UserInput(BaseModel):
+    current_latitude: float
+    current_longitude: float
 
 
 # Function to fetch nearby amenities
@@ -79,8 +87,11 @@ def calculate_location_score(amenities, alerts):
     return score
 
 # Main function to gather user inputs and evaluate locations
-async def main(user_lat, user_lon, financial_situation, has_kids, job_flexibility):
+@app.post("/recommend-locations")
+async def main(user_input: UserInput):
     # Define minimum and maximum relocation distance
+    user_lat = user_input.current_latitude
+    user_lon = user_input.current_longitude
     min_safe_distance = 5  # km
     max_safe_distance = 20  # km
 
@@ -188,14 +199,14 @@ async def fetch_location_data(session, lat, lon):
 if __name__ == "__main__":
     import json
 
-with open('example_inputs.json') as f:
-    data = json.load(f)
+    with open('example_inputs.json') as f:
+        data = json.load(f)
 
-example = data['examples'][0]
-user_lat = example['current_latitude']
-user_lon = example['current_longitude']
-financial_situation = example['financial_situation']
-has_kids = example['has_kids']
-job_flexibility = example['job_flexibility']
+    example = data['examples'][0]
+    user_lat = example['current_latitude']
+    user_lon = example['current_longitude']
+    financial_situation = example['financial_situation']
+    has_kids = example['has_kids']
+    job_flexibility = example['job_flexibility']
 
-asyncio.run(main(user_lat, user_lon, financial_situation, has_kids, job_flexibility))
+    asyncio.run(main(user_lat, user_lon))
