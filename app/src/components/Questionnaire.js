@@ -114,31 +114,6 @@ const Questionnaire = () => {
             </div>
         </div>
         </div>
-        <div className='form-group'>
-          <label>Mortgage Assistance Needed:</label>
-          <div>
-            <label>
-              <input
-                type="radio"
-                name="mortgageAssistance"
-                value="yes"
-                checked={formData.mortgageAssistance === 'yes'}
-                onChange={handleChange}
-              />
-              Yes
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="mortgageAssistance"
-                value="no"
-                checked={formData.mortgageAssistance === 'no'}
-                onChange={handleChange}
-              />
-              No
-            </label>
-          </div>
-        </div>
 
         <div className='form-group'>
           <label htmlFor="max_distance">Preferred Distance to Move (in miles):</label>
