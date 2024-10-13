@@ -1,0 +1,35 @@
+{
+    "examples": [
+      {
+        "current_latitude": 38.8977,
+        "current_longitude": -77.0365,
+        "financial_situation": [60000, 90000],
+        "has_kids": true,
+        "job_flexibility": true
+      },
+      {
+        "current_latitude": 29.7604,
+        "current_longitude": -95.3698,
+        "financial_situation": [60000, 90000],
+        "has_kids": false,
+        "job_flexibility": false
+      },
+      {
+        "current_latitude": 37.5407,
+        "current_longitude": -77.4360,
+        "financial_situation": [60000, 90000],
+        "has_kids": true,
+        "job_flexibility": true
+      },
+      {
+        "current_latitude": 39.7392,
+        "current_longitude": -104.9903,
+        "financial_situation": [60000, 90000],
+        "has_kids": false,
+        "job_flexibility": true
+      }
+    ]
+  }
+
+  
+  
