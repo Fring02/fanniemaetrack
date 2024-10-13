@@ -35,12 +35,12 @@ def fetch_nearby_amenities(lat, lon, radius=300000):
     );
     out body;
     """
-        
-    response = requests.post(overpass_url, data={"data": overpass_query})
-    
+
+    response = requests.post(overpass_url, data={"data": overpass_query}, timeout = 10)
+
     if response.status_code == 200:
         data = response.json()
-        
+
         amenities = {
             "hospital": [],
             "supermarket": [],
@@ -58,7 +58,7 @@ def fetch_nearby_amenities(lat, lon, radius=300000):
                     amenities["park"].append(element)
                 elif element['tags'].get('amenity') == 'school':
                     amenities["school"].append(element)
-        
+
         return amenities
     else:
         print(f"Error fetching amenities: {response.status_code}, {response.text}")
@@ -73,7 +73,7 @@ def fetch_nearby_amenities(lat, lon, radius=300000):
 def fetch_nws_alerts(lat, lon):
     nws_url = f"https://api.weather.gov/alerts/active?point={lat},{lon}"
     response = requests.get(nws_url)
-    
+
     if response.status_code == 200:
         alerts_data = response.json()
         return alerts_data['features']  # Return the list of alerts
@@ -121,7 +121,7 @@ def calculate_location_score(amenities, alerts, new_location, has_kids, school_i
     max_hospitals = 10
     max_parks = 15
     max_schools = 10
-    
+
     # Use new home location for distance calculation
     new_home_location = (new_location[0], new_location[1])
     distance_penalty = {
@@ -156,7 +156,7 @@ def calculate_location_score(amenities, alerts, new_location, has_kids, school_i
                 distance_penalty[category] += 3
             else:
                 distance_penalty[category] += 5
-            
+
             count += 1  # Increment the count of amenities processed for this category
 
     # Weighting and scoring based on user profile
@@ -167,7 +167,7 @@ def calculate_location_score(amenities, alerts, new_location, has_kids, school_i
     if has_kids:
         school_weight = int(school_importance)
         park_weight = int(park_importance)
-        
+
         score += min(len(amenities["school"]) * school_weight - distance_penalty["school"], 50)
         score += min(len(amenities["park"]) * park_weight - distance_penalty["park"], 25)
     else:
@@ -198,7 +198,7 @@ def find_safe_locations(user_lat, user_lon, min_safe_distance, max_safe_distance
         (user_lat - 0.1, user_lon + 0.2),  # Location 3
         (user_lat - 0.2, user_lon - 0.2),  # Location 4
     ]
-    
+
     for location in potential_locations:
         distance = geodesic((user_lat, user_lon), location).km
         if min_safe_distance <= distance <= max_safe_distance:
@@ -239,93 +239,21 @@ for location in safe_locations:
     lat, lon = location
     amenities = fetch_nearby_amenities(lat, lon)
     alerts = fetch_nws_alerts(lat, lon)
-    location_score = calculate_location_score(amenities, alerts, location, has_kids)
-    
+    score = calculate_location_score(amenities, alerts, location, has_kids)
+
+    # Store each location with its score
     location_scores.append({
-        "location": (lat, lon),
-        "score": location_score,
-        "amenities": amenities,
-        "alerts": alerts
+        'location': (lat, lon),
+        'score': score,
+        'amenities': amenities,
+        'alerts': alerts
     })
-    #location_scores.append((location, location_score))
-    #print(f"Location: {location}, Score: {location_score}")
 
-# Sort the locations by score in descending order
-sorted_location_scores = sorted(location_scores, key=lambda x: x["score"], reverse=True)
+# Sort locations by score in descending order
+sorted_locations = sorted(location_scores, key=lambda x: x['score'], reverse=True)
 
-'''# Display the best options
-print("\nBest safe relocation options:")
-for location, score in sorted_location_scores:
-    print(f"Location: {location}, Score: {score}")'''
+# Output results
+print("Safe locations ranked by score:")
+for loc in sorted_locations:
+    print(f"Location: {loc['location']}, Score: {loc['score']}")
     
-# Output the top location with its score
-# Output the top location with its score
-if sorted_location_scores:
-    # Initialize a variable to keep track of the user's current county
-    user_county = ""
-    
-    # Reverse geocode to get the user's address and county
-    try:
-        user_location = geolocator.reverse((user_lat, user_lon))
-        if user_location and 'properties' in user_location.raw:
-            user_county = user_location.raw['properties'].get('county', '')
-            print("User's address:", user_location.address if user_location else "Unknown address")
-    except Exception as e:
-        print("Error in reverse geocoding user's location:", e)
-
-    # Get the current risk score
-    risk_threshold = 0.95 * current_risk_score  # Calculate the threshold
-    
-    suitable_locations = []
-
-    # Iterate through sorted locations to find a different county with lower risk
-    for top_location_data in sorted_location_scores:
-        loc = top_location_data["location"]
-        score = top_location_data["score"]
-        amenities = top_location_data["amenities"]
-        alerts = top_location_data["alerts"]
-
-        # Check if the score meets the threshold
-        if score >= risk_threshold:
-            #print(f"Skipping location due to high risk score: {score}")
-            continue  # Skip to the next location if it doesn't meet the threshold
-
-        # Print coordinates before reverse geocoding
-        print(f"Coordinates for recommended location: {loc[0]}, {loc[1]}")
-
-        # Reverse geocode to get the recommended location's county
-       try:
-                location = geolocator.reverse((loc[0], loc[1]))
-                if location and 'properties' in location.raw:
-                    county = location.raw['properties'].get('county', '')
-
-                    # Check if the recommended county is different from the user's county
-                    if county and county != user_county_name:
-                        suitable_locations.append({
-                            "county": county,
-                            "score": score,
-                            "amenities": amenities,
-                            "alerts": alerts,
-                        })
-                else:
-                    print("Location data not available for coordinates:", loc)
-            except Exception as e:
-                print("Error in reverse geocoding for location:", loc)
-                print("Error details:", e)
-
-        # Now, find the highest scored location among the suitable ones
-        if suitable_locations:
-            highest_location = max(suitable_locations, key=lambda x: x["score"])
-            print("Top Recommended Location:")
-            print(f"County: {highest_location['county']}")
-            print(f"Score: {highest_location['score']}")
-            print(f"Hospitals: {len(highest_location['amenities'].get('hospital', []))}")
-            print(f"Supermarkets: {len(highest_location['amenities'].get('supermarket', []))}")
-            print(f"Parks: {len(highest_location['amenities'].get('park', []))}")
-            print(f"Schools: {len(highest_location['amenities'].get('school', []))}")
-            print(f"Active Alerts: {len(highest_location['alerts'])}")
-        else:
-            print("No suitable locations found that meet the risk score criteria.")
-    else:
-        print("No suitable locations found.")
-
