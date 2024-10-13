@@ -160,12 +160,20 @@ function loadGeoJsonData(map){
     let housingMarkers = [];
     if (mapRef.current) {
       const map = new window.google.maps.Map(document.getElementById('map'), {
-        center: { lat: 38.8462, lng: -77.3064 },
-        zoom: 15,
+        center: { lat: location.state.filter.lat, lng: location.state.filter.lng },
+        zoom: 10,
         mapTypeId: 'terrain',
       });
      let states = filter.states;
-     console.log(states);
+
+     const marker = new window.google.maps.Marker({
+      position: { lat: location.state.filter.lat, lng: location.state.filter.lng },
+      map: map,
+      icon: {
+          scaledSize: new window.google.maps.Size(48, 48), // Adjust size
+        }
+      });
+
       displayLocations(states, onCheckCounty, filter);
       // Load GeoJSON and housing data
         Promise.all([fetchHousingListings(states, filter.filter), loadGeoJsonData(map)])

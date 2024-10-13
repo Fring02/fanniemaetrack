@@ -52,8 +52,8 @@ function displayHousingListings(map, housingMarkers, response) {
             map: map,
             title: `${listing.location.address.line}, ${listing.location.address.city}, ${listing.location.address.state_code}`,
             icon: {
-                url: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSpKZO2RGZy5fvT2cJWSFQfaK4LM-wtQWSY6w&shttps://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ4yXgYP6ChV78K5ec3x9pOZPyTKhRYb_3pKA&shttps://static.thenounproject.com/png/658934-200.png', // Custom house icon URL
-                scaledSize: new window.google.maps.Size(16, 16), // Adjust size
+                url: 'https://images.vexels.com/media/users/3/140527/isolated/preview/449b95d58f554656b159dd3ca21ab123-home-round-icon.png?w=360', // Custom house icon URL
+                scaledSize: new window.google.maps.Size(30, 30), // Adjust size
               }
         });
 

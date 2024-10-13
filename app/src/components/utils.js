@@ -1,4 +1,4 @@
-async function getCoordinates(address) {
+async function getCoordinates(address) {  
     const apiKey = 'AIzaSyCGJpwrHFi0zoh-ah89w-xIRtK8jGn0zDo'; // Replace with your API key
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
       address

@@ -10,7 +10,9 @@ const Questionnaire = () => {
     property_type: '',
     mortgageAssistance: 'no',
     max_distance: 0,
-    price_range: ''
+    price_range: '',
+    lat: 0,
+    lng: 0
   });
 
   const handleChange = (e) => {
@@ -27,7 +29,6 @@ const Questionnaire = () => {
     getCoordinates(formData.previousAddress).then(coords => {
       fetchRecommendedLocations(coords.current_latitude, coords.current_longitude, formData.max_distance)
       .then(data => {
-        
         const [min, max] = formData.price_range.split('-');
         navigate.push({pathname:'/search', state: {state: data, filter:
           {
@@ -35,7 +36,8 @@ const Questionnaire = () => {
             baths_min: formData.beds_min,
             property_type: formData.property_type,
             max_distance: formData.max_distance,
-            price_min: min, price_max: max
+            price_min: min, price_max: max,
+            lat: coords.current_latitude, lng: coords.current_longitude
           }
         }});
       });
