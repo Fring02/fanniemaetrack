@@ -3,6 +3,7 @@ import aiohttp
 import geopy.distance
 from geopy.geocoders import Nominatim
 
+
 # Function to fetch nearby amenities
 async def fetch_nearby_amenities(session, lat, lon, radius=20000):  # Increase radius to 20,000 meters
     overpass_url = "http://overpass-api.de/api/interpreter"
@@ -107,28 +108,64 @@ async def main(user_lat, user_lon, financial_situation, has_kids, job_flexibilit
 
     geolocator = Nominatim(user_agent="my_unique_application_name")
     try:
+        global user_location 
         user_location = geolocator.reverse((user_lat, user_lon))
-        print("User's address:", user_location.address)
+        # print("User's address:", user_location.address)
     except Exception as e:
         print(f"Error fetching user location: {e}")
 
+    dropdown_info = {
+        "counties":[
+
+        ], 
+        
+        "amenities": [
+
+        ],
+
+        "user_location": {
+            "city": user_location.raw['address'].get('city', '') or user_location.raw['address'].get('county', ''),
+            "address": user_location.raw['address'].get('address'),
+            "state": user_location.raw['address'].get('state', '')
+        }
+    }
+
+    unique_counties = 0
     # Output the top locations with their scores
-    print("Top Recommended Locations:\n")
+    # print("Top Recommended Locations:\n")
     try:
-        for location_data in location_scores[:3]:
+        for location_data in location_scores:
+            if unique_counties >= 3:
+                break
+
             loc = location_data["location"]
             score = location_data["score"]
             amenities = location_data["amenities"]
-            alerts = location_data["alerts"]
+            
         
             location = geolocator.reverse((loc[0], loc[1]))
-            print("Location address:", location.address)
-            print(f"Location ({loc[0]}, {loc[1]}) - Score: {score}")
-            print(f"  Hospitals: {len(amenities['hospital'])}")
-            print(f"  Supermarkets: {len(amenities['supermarket'])}")
-            print(f"  Parks: {len(amenities['park'])}")
-            print(f"  Active Alerts: {len(alerts)}\n")  # Display the number of active alerts
+            state = location.raw['address'].get('state', '')
+            city_county = location.raw['address'].get('city', '') or location.raw['address'].get('county', '')
+            # print("Location Information:")
+            # print(f"City/County: {city_county}")
+            # print("Location address:", location.address)
+            # print(f"Location ({loc[0]}, {loc[1]}) - Score: {score}")
             
+            if amenities not in dropdown_info['amenities']:
+                dropdown_info['amenities'].append(amenities)
+
+            if city_county not in dropdown_info["counties"]:
+                unique_counties += 1
+                dropdown_info['counties'].append( {
+                    "state": state,
+                    "county_name": city_county
+                }
+                )
+            # print(f"  Hospitals: {len(amenities['hospital'])}")
+            # print(f"  Supermarkets: {len(amenities['supermarket'])}")
+            # print(f"  Parks: {len(amenities['park'])}")
+            # print(f"  Active Alerts: {len(alerts)}\n")  # Display the number of active alerts
+        return dropdown_info
     except Exception as e:
         print(f"Error fetching location: {e}")
 
@@ -154,11 +191,11 @@ if __name__ == "__main__":
 with open('example_inputs.json') as f:
     data = json.load(f)
 
-for example in data['examples']:
-    user_lat = example['current_latitude']
-    user_lon = example['current_longitude']
-    financial_situation = example['financial_situation']
-    has_kids = example['has_kids']
-    job_flexibility = example['job_flexibility']
+example = data['examples'][0]
+user_lat = example['current_latitude']
+user_lon = example['current_longitude']
+financial_situation = example['financial_situation']
+has_kids = example['has_kids']
+job_flexibility = example['job_flexibility']
 
-    asyncio.run(main(user_lat, user_lon, financial_situation, has_kids, job_flexibility))
+asyncio.run(main(user_lat, user_lon, financial_situation, has_kids, job_flexibility))
