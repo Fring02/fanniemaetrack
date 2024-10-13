@@ -11,6 +11,7 @@ app = FastAPI()
 class UserInput(BaseModel):
     current_latitude: float
     current_longitude: float
+    max_distance: int
 
 
 # Function to fetch nearby amenities
@@ -94,7 +95,7 @@ async def main(user_input: UserInput):
     user_lat = user_input.current_latitude
     user_lon = user_input.current_longitude
     min_safe_distance = 5  # km
-    max_safe_distance = 20  # km
+    max_safe_distance = user_input.max_distance  # km
 
     # Find potential safe relocation points
     safe_locations = find_safe_locations(user_lat, user_lon, min_safe_distance, max_safe_distance)
