@@ -1,0 +1,248 @@
+import requests
+import geopy.distance
+from geopy.geocoders import Nominatim
+from geopy.distance import geodesic
+
+# Initialize geocoder
+geolocator = Nominatim(user_agent="my_unique_application_name")
+
+# Function to fetch nearby amenities
+def fetch_nearby_amenities(lat, lon, radius=30000):
+    overpass_url = "http://overpass-api.de/api/interpreter"
+    overpass_query = f"""
+[out:json];
+(
+  node["amenity"="hospital"](around:{radius},{lat},{lon});
+  node["shop"="supermarket"](around:{radius},{lat},{lon});
+  node["leisure"="park"](around:{radius},{lat},{lon});
+  node["landuse"="recreation_ground"](around:{radius},{lat},{lon});
+  node["amenity"="school"](around:{radius},{lat},{lon});
+);
+out body;
+"""
+        
+    response = requests.post(overpass_url, data={"data": overpass_query})
+    
+    if response.status_code == 200:
+        data = response.json()
+        
+        amenities = {
+            "hospital": [],
+            "supermarket": [],
+            "park": [],
+            "school": []
+        }
+
+        for element in data['elements']:
+            if 'tags' in element:
+                if element['tags'].get('amenity') == 'hospital':
+                    amenities["hospital"].append(element)
+                elif element['tags'].get('shop') == 'supermarket':
+                    amenities["supermarket"].append(element)
+                elif element['tags'].get('leisure') == 'park':
+                    amenities["park"].append(element)
+                elif element['tags'].get('amenity') == 'school':
+                    amenities["school"].append(element)
+        
+        return amenities
+    else:
+        print(f"Error fetching amenities: {response.status_code}, {response.text}")  # Enhanced error message
+        return {
+            "hospital": [],
+            "supermarket": [],
+            "park": [],
+            "school": []
+        }
+
+# Function to fetch NWS alerts for a location
+def fetch_nws_alerts(lat, lon):
+    nws_url = f"https://api.weather.gov/alerts/active?point={lat},{lon}"
+    response = requests.get(nws_url)
+    
+    if response.status_code == 200:
+        alerts_data = response.json()
+        return alerts_data['features']  # Return the list of alerts
+    else:
+        print(f"Error fetching NWS alerts: {response.status_code}")
+        return []
+
+# Function to find potential safe relocation points based on proximity
+def calculate_location_score(amenities, alerts, new_location, has_kids, school_importance=5, park_importance=5):
+    score = 0
+
+    # Maximum number of each amenity that will contribute to the score
+    max_supermarkets = 20
+    max_hospitals = 10
+    max_parks = 15
+    max_schools = 10
+    
+    # Use new home location for distance calculation
+    new_home_location = (new_location[0], new_location[1])
+    distance_penalty = {
+        "hospital": 0,
+        "supermarket": 0,
+        "school": 0,
+        "park": 0
+    }
+
+    # Calculate distance penalties based on new location
+    for category, items in amenities.items():
+        count = 0
+        for item in items:
+            if category == "supermarket" and count >= max_supermarkets:
+                break
+            if category == "hospital" and count >= max_hospitals:
+                break
+            if category == "park" and count >= max_parks:
+                break
+            if category == "school" and count >= max_schools:
+                break
+
+            amenity_location = (item['lat'], item['lon'])  # Assuming lat/lon is available for each amenity
+            distance = geodesic(new_home_location, amenity_location).km  # Calculate distance in km
+
+            # Apply distance penalty based on proximity
+            if distance <= 1:
+                distance_penalty[category] += 0
+            elif distance <= 5:
+                distance_penalty[category] += 1
+            elif distance <= 10:
+                distance_penalty[category] += 3
+            else:
+                distance_penalty[category] += 5
+            
+            count += 1  # Increment the count of amenities processed for this category
+
+    # Weighting and scoring based on user profile
+    score += min(len(amenities["hospital"]) * 10 - distance_penalty["hospital"], 50)
+    score += min(len(amenities["supermarket"]) * 8 - distance_penalty["supermarket"], 40)
+
+    # If the user has kids, consider schools and parks
+    if has_kids:
+        school_weight = int(school_importance)
+        park_weight = int(park_importance)
+        
+        score += min(len(amenities["school"]) * school_weight - distance_penalty["school"], 50)
+        score += min(len(amenities["park"]) * park_weight - distance_penalty["park"], 25)
+    else:
+        # If no kids, parks are considered less important
+        score += min(len(amenities["park"]) * 3 - distance_penalty["park"], 15)
+
+    # Apply penalty based on the number of alerts
+    penalty = calculate_alert_penalty(alerts)
+    score -= penalty
+
+    return score
+
+
+def calculate_alert_penalty(alerts):
+    if len(alerts) == 0:
+        return 0  # No penalty for no alerts
+    elif len(alerts) == 1:
+        return 50  # Single alert penalty
+    else:
+        return 50 + (len(alerts) - 1) * 25  # Additional penalty for extra alerts
+
+# Function to find safe locations based on distance
+def find_safe_locations(user_lat, user_lon, min_safe_distance, max_safe_distance):
+    safe_locations = []
+
+    # Example locations; in practice, these would be dynamically fetched
+    potential_locations = [
+        (user_lat + 0.1, user_lon + 0.1),  # Location 1
+        (user_lat + 0.2, user_lon - 0.1),  # Location 2
+        (user_lat - 0.1, user_lon + 0.2),  # Location 3
+        (user_lat - 0.2, user_lon - 0.2),  # Location 4
+    ]
+    
+    for location in potential_locations:
+        distance = geodesic((user_lat, user_lon), location).km
+        if min_safe_distance <= distance <= max_safe_distance:
+            safe_locations.append(location)
+
+    return safe_locations
+
+# Gather user inputs
+user_lat = float(input("Enter your current latitude: "))  # Current location (disaster zone)
+user_lon = float(input("Enter your current longitude: "))
+financial_situation = float(input("Enter your financial situation (e.g., 50000): "))
+has_kids = input("Do you have kids? (yes/no): ").strip().lower() == 'yes'
+job_flexibility = input("Is your job flexible? (yes/no): ").strip().lower() == 'yes'
+
+# Define minimum and maximum relocation distance
+min_safe_distance = 20  # km
+max_safe_distance = 50  # km
+
+# Find potential safe relocation points
+safe_locations = find_safe_locations(user_lat, user_lon, min_safe_distance, max_safe_distance)
+
+# Store each location with its score in a list
+location_scores = []
+
+print("Evaluating nearby safe locations...\n")
+
+for location in safe_locations:
+    lat, lon = location
+    
+    # Fetch amenities around the new location with an increased radius
+    amenities = fetch_nearby_amenities(lat, lon, radius=20000)  # Increased radius
+    
+    # Fetch NWS alerts for the location
+    nws_alerts = fetch_nws_alerts(lat, lon)
+
+    # Calculate location score based on amenities, alerts, and user profile
+    location_score = calculate_location_score(amenities, nws_alerts, location, has_kids)
+    
+    # Store the location and its score in the list
+    location_scores.append({
+        "location": (lat, lon),
+        "score": location_score,
+        "amenities": amenities,
+        "alerts": nws_alerts
+    })
+
+# Sort locations by score in descending order (highest score first)
+location_scores = sorted(location_scores, key=lambda x: x["score"], reverse=True)
+
+# Output the top location with its score
+if location_scores:
+    top_location_data = location_scores[0]
+    loc = top_location_data["location"]
+    score = top_location_data["score"]
+    amenities = top_location_data["amenities"]
+    alerts = top_location_data["alerts"]
+    
+    # Reverse geocode to get the city/county
+    try:
+        user_location = geolocator.reverse((user_lat, user_lon))
+        print("User's address:", user_location.address)
+        
+        location = geolocator.reverse((loc[0], loc[1]))
+        city_county = location.raw['address'].get('city', '') or location.raw['address'].get('county', '')
+        print("Top Recommended Location:")
+        print(f"City/County: {city_county}")
+        print(f"Score: {score}")
+        print(f"Hospitals: {len(amenities['hospital'])}")
+        print(f"Supermarkets: {len(amenities['supermarket'])}")
+        print(f"Parks: {len(amenities['park'])}")
+        print(f"Active Alerts: {len(alerts)}")  # Display the number of active alerts
+        
+    except Exception as e:
+        print(f"Error fetching location data: {e}")
+
+else:
+    print("No locations found.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,46 @@
+<!-- src/app/housing-questionnaire/housing-questionnaire.component.html -->
+<div class="questionnaire-container" *ngIf="!formSubmitted">
+    <h2>Housing Preferences Questionnaire</h2>
+    <form [formGroup]="questionnaireForm" (ngSubmit)="onSubmit()">
+      <div>
+        <label for="stayDuration">Stay Duration:</label>
+        <select id="stayDuration" formControlName="stayDuration">
+          <option value="long-term">Long Term</option>
+          <option value="short-term">Short Term</option>
+          <option value="temporary">Temporary</option>
+        </select>
+      </div>
+  
+      <div>
+        <label for="priceRange">Preferred Price Range:</label>
+        <input id="priceRange" formControlName="priceRange" type="text" placeholder="e.g., $500 - $1500" />
+      </div>
+  
+      <div>
+        <label>
+          <input type="checkbox" formControlName="schooling" />
+          Near schooling facilities
+        </label>
+      </div>
+  
+      <div>
+        <label>
+          <input type="checkbox" formControlName="jobs" />
+          Near job opportunities
+        </label>
+      </div>
+  
+      <div>
+        <label for="otherPreferences">Other Preferences:</label>
+        <textarea id="otherPreferences" formControlName="otherPreferences" rows="3"></textarea>
+      </div>
+  
+      <button type="submit">Submit</button>
+    </form>
+  
+    <div *ngIf="formResult">
+      <h3>Form Result:</h3>
+      <pre>{{ formResult | json }}</pre>
+    </div>
+  </div>
+  
