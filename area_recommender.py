@@ -5,6 +5,8 @@ from geopy.geocoders import Nominatim
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import us
+import geopandas as gpd
+from shapely.geometry import Point
 
 app = FastAPI()
 
@@ -13,6 +15,19 @@ class UserInput(BaseModel):
     current_longitude: float
     max_distance: int
 
+geojson = gpd.read_file('riskdata.geojson')
+
+def fetch_risk_score(session, lat, lon):
+    print(lat, lon)
+    location_point = Point(lat, lon)
+    for _, row in geojson.iterrows():
+        if location_point.within(row.geometry):
+            risk_score = row['RISK_SCORE']
+            print(f"The risk score for the given location is: {risk_score}")
+            return risk_score
+        else:
+            print("The given location does not fall within any risk area.")
+            return -1
 
 # Function to fetch nearby amenities
 async def fetch_nearby_amenities(session, lat, lon, radius=20000):  # Increase radius to 20,000 meters
@@ -69,14 +84,15 @@ def find_safe_locations(user_lat, user_lon, min_distance_km=5, max_distance_km=2
     return potential_locations
 
 # Calculate score based on amenities and alerts
-def calculate_location_score(amenities, alerts):
+def calculate_location_score(amenities, alerts, risk_score):
     score = 0
 
     # Weighting the score based on the number of available amenities
-    score += len(amenities["hospital"]) * 10  # Hospitals have high importance
-    score += len(amenities["supermarket"]) * 8  # Supermarkets are crucial
-    score += len(amenities["park"]) * 5  # Parks are beneficial but lower priority
+    score += len(amenities["hospital"])/2   # Hospitals have high importance
+    score += len(amenities["supermarket"])   # Supermarkets are crucial
+    score += len(amenities["park"])/4   # Parks are beneficial but lower priority
     
+    penalty = 0
     # Penalize based on the number of alerts
     if len(alerts) == 0:
         penalty = 0  # No penalty for no alerts
@@ -84,7 +100,8 @@ def calculate_location_score(amenities, alerts):
         penalty = 50  # Single alert penalty
     else:
         penalty = 50 + (len(alerts) - 1) * 25  # Additional penalty for extra alerts
-
+    
+    penalty -= risk_score or 0
     score -= penalty  # Apply penalty to the score
     return score
 
@@ -165,18 +182,25 @@ async def main(user_input: UserInput):
             # print("Location address:", location.address)
             # print(f"Location ({loc[0]}, {loc[1]}) - Score: {score}")
             
-            if amenities not in dropdown_info['amenities']:
-                dropdown_info['amenities'].append(amenities)
-
-            for loc_info in dropdown_info['counties']:
-                if city_county not in loc_info:
-                    unique_counties += 1
-                    dropdown_info['counties'].append(
+            # if amenities not in dropdown_info['amenities']:
+            #     dropdown_info['amenities'].append(amenities)
+            if not dropdown_info['counties']:
+                dropdown_info['counties'].append(
                         {
                             "state": state_code,
                             "county": city_county
                         }
                     )
+            counties = [location['county'] for location in dropdown_info['counties']]    
+            if city_county not in counties:
+                unique_counties += 1
+                dropdown_info['counties'].append(
+                    {
+                        "state": state_code,
+                        "county": city_county
+                    }
+                )
+                    
             # print(f"  Hospitals: {len(amenities['hospital'])}")
             # print(f"  Supermarkets: {len(amenities['supermarket'])}")
             # print(f"  Parks: {len(amenities['park'])}")
@@ -189,9 +213,9 @@ async def main(user_input: UserInput):
 async def fetch_location_data(session, lat, lon):
     amenities = await fetch_nearby_amenities(session, lat, lon, radius=15000)  # Increased radius
     nws_alerts = await fetch_nws_alerts(session, lat, lon)
-
+    risk_score = fetch_risk_score(session, lat, lon)
     # Calculate location score based on amenities and alerts
-    location_score = calculate_location_score(amenities, nws_alerts)
+    location_score = calculate_location_score(amenities, nws_alerts, risk_score)
     
     return {
         "location": (lat, lon),
