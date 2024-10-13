@@ -4,8 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Choropleth Map with Housing Listings</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCGJpwrHFi0zoh-ah89w-xIRtK8jGn0zDo&callback=initMap" async defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
   <script src="housing.js"></script>
+  <script src="locations.js"></script>
   <style>
     #map {
       height: 90vh;
@@ -14,7 +17,27 @@
   </style>
 </head>
 <body>
-  <h1 style="font-family: Verdana, Geneva, Tahoma, sans-serif;">MaeAway</h1>
+    <div class="d-flex p-3 bg-light">
+        <h1 style="font-family: Verdana, Geneva, Tahoma, sans-serif;">MaeAway</h1>
+        <div class="container d-flex justify-content-end">
+            <!-- Button to open the sidebar -->
+            <button class="btn btn-light" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">
+                <img src="https://cdn-icons-png.flaticon.com/512/9293/9293128.png" width="30" height="30"/>
+            </button>
+        
+            <!-- Offcanvas sidebar -->
+            <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasRight" aria-labelledby="offcanvasRightLabel">
+            <div class="offcanvas-header">
+                <h5 id="offcanvasRightLabel">Recommended areas</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <div id="stateList" class="list-group"></div>
+                <button class="btn btn-primary mt-3" id="apply-locations">Apply</button>
+            </div>
+            </div>
+        </div>
+    </div>
   <div id="map"></div>
   <script>
     let map;
@@ -26,12 +49,45 @@
         mapTypeId: 'terrain',
       });
 
+      const states = [
+        { name: 'CA', cities: ['Los Angeles', 'San Francisco', 'San Diego'] },
+        { name: 'NY', cities: ['New York', 'Buffalo', 'Rochester'] },
+        { name: 'VA', cities: ['Fairfax', 'Arlington', 'Richmond'] }
+      ];
+      displayLocations(states);
       // Load GeoJSON and housing data
-      Promise.all([fetchHousingListings([{name: 'FL', cities: ['Tampa', 'Miami']}]), loadGeoJsonData()])
+        Promise.all([fetchHousingListings(states), loadGeoJsonData()])
         .then(([housingData]) => {
-          displayHousingListings(housingData);
+            housingData.flat().forEach(data => {
+                displayHousingListings(data);
+            });
         })
         .catch((error) => console.error("Error loading data:", error));
+
+
+        document.getElementById('apply-locations').addEventListener('click', () => {
+            const selectedCities = Array.from(
+                document.querySelectorAll('#stateList input[type="checkbox"]:checked')
+            ).map(checkbox => ({
+                state: checkbox.dataset.state,
+                city: checkbox.value
+            }));
+            if (selectedCities.length > 0) {
+                // Clear existing markers on the map
+                housingMarkers.forEach(marker => marker.setMap(null));
+                housingMarkers = [];
+
+                // Fetch new listings based on selected cities
+                fetchHousingListings(selectedCities)
+                .then(housingData => {
+                    housingData.flat().forEach(data => {
+                    displayHousingListings(data);
+                    });
+                })
+                .catch(error => console.error("Error loading data:", error));
+            }
+        });
+
     }
 
     function loadGeoJsonData() {
@@ -61,7 +117,6 @@
             <p>Risk Score: ${riskScore}</p>
           </div>
         `;
-        
         const infoWindow = new google.maps.InfoWindow({
           content: content,
           position: event.latLng,
@@ -88,8 +143,6 @@
     ? '#FFFF00'  // 20-40% (Low Risk - Yellow)
     : '#00FF00'; // 0-20% (Minimal Risk - Green)
 }
-
-
   </script>
 </body>
 </html>

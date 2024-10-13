@@ -1,8 +1,8 @@
-async function fetchHousingListings(states) {
-    for(let state in states){
-        let code = state.name;
-        let cities = state.cities.join(',');
-        //`
+async function fetchHousingListings(states, filter) {
+    const fetchPromises = states.map((state) => {
+        const code = state.name;
+        const cities = state.cities.join(',');  // Join cities into a comma-separated string
+        
         const url = `https://us-real-estate.p.rapidapi.com/v3/for-sale?state_code=${code}&city=${cities}&sort=newest&offset=0&limit=42`;
         const options = {
           method: 'GET',
@@ -11,19 +11,18 @@ async function fetchHousingListings(states) {
             'x-rapidapi-host': 'us-real-estate.p.rapidapi.com'
           }
         };
-        try {
-          const response = await fetch(url, options);
-          if (!response.ok) {
-            console.error(`HTTP error! status: ${response.status}`);
-            return {};
-          }
-          const data = await response.json();
-          return data;
-        } catch (error) {
-          console.error("Error fetching housing listings:", error);
-          return {};  // Return an empty object on error
-        }
-    }
+        // Return a fetch promise for each state
+        return fetch(url, options)
+          .then((response) => {
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            return response.json();
+          })
+          .catch((error) => {
+            console.error(`Error fetching listings for ${code}:`, error);
+            return {};  // Return an empty object if the request fails
+          });
+     });
+    return Promise.all(fetchPromises);
 }
 
 
@@ -31,7 +30,7 @@ async function fetchHousingListings(states) {
 function displayHousingListings(response) {
         if (!response.data || !response.data.home_search) {
           console.error("Invalid housing data format:", response);
-        return;
+            return;
         }
 
         const listings = response.data.home_search.results;
@@ -43,6 +42,10 @@ function displayHousingListings(response) {
             position: { lat: coordinates.lat, lng: coordinates.lon },
             map: map,
             title: `${listing.location.address.line}, ${listing.location.address.city}, ${listing.location.address.state_code}`,
+            icon: {
+                url: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSpKZO2RGZy5fvT2cJWSFQfaK4LM-wtQWSY6w&shttps://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ4yXgYP6ChV78K5ec3x9pOZPyTKhRYb_3pKA&shttps://static.thenounproject.com/png/658934-200.png', // Custom house icon URL
+                scaledSize: new google.maps.Size(16, 16), // Adjust size
+              }
         });
 
         const imageSrc = listing.primary_photo ? listing.primary_photo.href : 'https://via.placeholder.com/150';
