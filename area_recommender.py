@@ -168,13 +168,15 @@ async def main(user_input: UserInput):
             if amenities not in dropdown_info['amenities']:
                 dropdown_info['amenities'].append(amenities)
 
-            if city_county not in dropdown_info["counties"]:
-                unique_counties += 1
-                dropdown_info['counties'].append( {
-                    "state": state_code,
-                    "county_name": city_county
-                }
-                )
+            for loc_info in dropdown_info['counties']:
+                if city_county not in loc_info:
+                    unique_counties += 1
+                    dropdown_info['counties'].append(
+                        {
+                            "state": state_code,
+                            "county": city_county
+                        }
+                    )
             # print(f"  Hospitals: {len(amenities['hospital'])}")
             # print(f"  Supermarkets: {len(amenities['supermarket'])}")
             # print(f"  Parks: {len(amenities['park'])}")
