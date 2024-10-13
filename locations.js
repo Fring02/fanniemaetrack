@@ -1,5 +1,6 @@
 function displayLocations(states){
-    const stateList = document.getElementById('stateList');
+  alert(JSON.stringify(states))
+    const stateList = document.getElementById('listings');
     states.forEach(state => {
       // Create a state header item
       const stateHeader = document.createElement('div');
@@ -22,5 +23,7 @@ function displayLocations(states){
         cityItem.appendChild(document.createTextNode(city));
         stateList.appendChild(cityItem);
       });
-    });
+    });``
 }
+
+export {displayLocations};

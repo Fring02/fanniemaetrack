@@ -35,6 +35,9 @@ function displayHousingListings(response) {
 
         const listings = response.data.home_search.results;
 
+        const listingsSection = document.getElementById('listings');
+        listingsSection.innerHTML = ''; // Clear previous listings
+
         listings.forEach((listing) => {
         const coordinates = listing.location.address.coordinate;
 
@@ -59,9 +62,19 @@ function displayHousingListings(response) {
         <p><strong>Sqft:</strong> ${(listing.description.sqft !== null) ? listing.description.sqft.toLocaleString() : "Unavailable"}</p>
         <img src="${imageSrc}" alt="Property Image" style="width:100%; height:auto;"/>
         <a href="https://www.realtor.com/realestateandhomes-detail/${listing.permalink}" target="_blank">View Details</a>
-        </div>
-    `;
+        </div>`;
 
+        const listingDiv = document.createElement('div');
+        listingDiv.classList.add('listing');
+        listingDiv.innerHTML = `
+          <h4>${listing.address}</h4>
+          <p>Price: $${listing.price}</p>
+          <p>Bedrooms: ${listing.bedrooms}</p>
+          <p>Safety Score: ${listing.safety}</p>
+          <button class="listing-button">View Details</button>
+        `;
+        listingsSection.appendChild(listingDiv);
+        
     const infoWindow = new google.maps.InfoWindow({
         content: infoWindowContent,
     });

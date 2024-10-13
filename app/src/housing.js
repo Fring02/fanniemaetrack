@@ -7,7 +7,7 @@ async function fetchHousingListings(states) {
         const options = {
           method: 'GET',
           headers: {
-            'x-rapidapi-key': 'ed8586b3cfmsh3061e0b328c10ffp14a91bjsn561a5393a476',
+            'x-rapidapi-key': 'f71b860b52mshddedffc0e51d3d1p1ab6bdjsncaead164d2c0',
             'x-rapidapi-host': 'us-real-estate.p.rapidapi.com'
           }
         };
@@ -73,3 +73,5 @@ function displayHousingListings(map, housingMarkers, response) {
     housingMarkers.push(marker);
     });
 }
+
+export {displayHousingListings, fetchHousingListings};

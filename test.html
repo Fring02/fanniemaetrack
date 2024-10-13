@@ -64,30 +64,6 @@
         })
         .catch((error) => console.error("Error loading data:", error));
 
-
-        document.getElementById('apply-locations').addEventListener('click', () => {
-            const selectedCities = Array.from(
-                document.querySelectorAll('#stateList input[type="checkbox"]:checked')
-            ).map(checkbox => ({
-                state: checkbox.dataset.state,
-                city: checkbox.value
-            }));
-            if (selectedCities.length > 0) {
-                // Clear existing markers on the map
-                housingMarkers.forEach(marker => marker.setMap(null));
-                housingMarkers = [];
-
-                // Fetch new listings based on selected cities
-                fetchHousingListings(selectedCities)
-                .then(housingData => {
-                    housingData.flat().forEach(data => {
-                    displayHousingListings(data);
-                    });
-                })
-                .catch(error => console.error("Error loading data:", error));
-            }
-        });
-
     }
 
     function loadGeoJsonData() {
