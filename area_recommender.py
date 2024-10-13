@@ -4,12 +4,14 @@ import geopy.distance
 from geopy.geocoders import Nominatim
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import us
 
 app = FastAPI()
 
 class UserInput(BaseModel):
     current_latitude: float
     current_longitude: float
+    max_distance: int
 
 
 # Function to fetch nearby amenities
@@ -93,7 +95,7 @@ async def main(user_input: UserInput):
     user_lat = user_input.current_latitude
     user_lon = user_input.current_longitude
     min_safe_distance = 5  # km
-    max_safe_distance = 20  # km
+    max_safe_distance = user_input.max_distance  # km
 
     # Find potential safe relocation points
     safe_locations = find_safe_locations(user_lat, user_lon, min_safe_distance, max_safe_distance)
@@ -156,6 +158,7 @@ async def main(user_input: UserInput):
         
             location = geolocator.reverse((loc[0], loc[1]))
             state = location.raw['address'].get('state', '')
+            state_code = state_code = us.states.lookup(state).abbr if state else None
             city_county = location.raw['address'].get('city', '') or location.raw['address'].get('county', '')
             # print("Location Information:")
             # print(f"City/County: {city_county}")
@@ -168,7 +171,7 @@ async def main(user_input: UserInput):
             if city_county not in dropdown_info["counties"]:
                 unique_counties += 1
                 dropdown_info['counties'].append( {
-                    "state": state,
+                    "state": state_code,
                     "county_name": city_county
                 }
                 )
